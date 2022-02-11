@@ -1,0 +1,64 @@
+---
+layout: post
+title:  "말속도 조음속도 구하기!"
+---
+
+clearinfo
+
+Read from file: "C:\ps\example_4.TextGrid"
+
+#"<PRI~" 부분 이름으로 바꿔놓기
+selectObject: "TextGrid example_4"
+num = Get number of intervals: 1
+for i to num
+	text$ = Get label of interval: 1, i
+	if text$ == "<PRIVATE.INFO>"
+		Set interval text: 1, i, "이동은"
+	endif
+endfor
+
+selectObject: "TextGrid example_4"
+Copy: "example_4_practice"
+
+
+# 말길이 sr(말+sp) 조음길이 ar(말)
+
+sr = 0
+ar = 0
+
+# 발화를 저장할 변수
+label$ = ""
+
+i = 1
+for i to num
+	text$ = Get label of interval: 1, i
+	st = Get start time of interval: 1, i
+	ed = Get end time of interval: 1, i 
+	dr = ed - st
+	# 만약 레이블이 <SIL>이라면? 일단 한 행 몫을 주고 길이까지 알려줘! 두번째 <SIL>부터는 새 발화야. 그니까 발화를 저장할 label$은 공백으로 두고, 말&조음길이도 0으로 바꿔줘. 
+	if text$ == "<SIL>"
+		label$ = ""
+		ar = 0
+		sr = 0
+		drsec = dr*1000
+		appendInfoLine: text$, tab$, "-", tab$, string$('drsec:2') + " ms"
+	endif
+	# 만약 레이블에 의미있는 내용이 들어있다면? 발화를 저장할 변수 label$에 레이블을 넣어주고, sr, ar 모두에 구간 길이를 더해줘
+	if not startsWith(text$, "<")
+		label$ = label$ + text$ 
+		ar = ar + dr
+		sr = sr + dr
+	# 만약 레이블이 <SP>이라면? sr에만 구간 길이를 넣어줘
+	elsif text$ == "<SP>"
+		sr = sr + dr
+	endif
+	# 발화는 <SIL>로 나뉘니까, 만약 다음 레이블에 <SIL>이 있다면 발화, 말속도, 조음속도를 한 행에 넣어줘
+	next$ = Get label of interval: 1, i+1
+	if next$ == "<SIL>"
+		ar_sps = length(label$)/ar
+		sr_sps = length(label$)/sr
+		appendInfoLine: label$, tab$, string$('ar_sps:2') + " sps", tab$, string$('sr_sps:2') + " sps"
+	endif
+	# 이제 그 다음 레이블에 <SIL>이 있겠지? 맨 위 if로 올라가
+endfor
+		  
